@@ -41,7 +41,16 @@ app.get('/search/:name', function(req, res) {
     // Add listeners to the EventEmiiter returned from getFromApi
     searchReq.on('end', function(item) {
         var artist = item.artists.items[0];
-        res.json(artist);
+        var searchRel = getFromApi('artists/' + artist.id + '/related-artists', {});
+
+        searchRel.on('end', function(item) {
+            artist.related = item.artists;
+            res.json(artist);
+        });
+
+        searchRel.on('error', function(code) {
+            res.sendStatus(code);
+        });
     });
 
     searchReq.on('error', function(code) {
