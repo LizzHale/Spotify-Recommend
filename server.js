@@ -38,24 +38,23 @@ app.get('/search/:name', function(req, res) {
         type: 'artist'
     });
 
-    // Add listeners to the EventEmiiter returned from getFromApi
-    searchForArtist.on('end', function(item) {
+    var onSearchEnd = function(item) {
         var artist = item.artists.items[0];
-        var searchForRelated = getFromApi('artists/' + artist.id + '/related-artists', {});
+        var searchForRelated = getFromApi('artists/' + artist.id + '/related-artists');
 
         searchForRelated.on('end', function(item) {
             artist.related = item.artists;
             res.json(artist);
         });
+        searchForRelated.on('error', onError);
+    };
 
-        searchForRelated.on('error', function(code) {
-            res.sendStatus(code);
-        });
-    });
-
-    searchForArtist.on('error', function(code) {
+    var onError = function() {
         res.sendStatus(code);
-    });
+    };
+
+    searchForArtist.on('end', onSearchEnd);
+    searchForArtist.on('error', onError);
 });
 
 app.listen(8080);
