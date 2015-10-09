@@ -32,28 +32,28 @@ var getFromApi = function(endpoint, args) {
 app.get('/search/:name', function(req, res) {
     // remember, first argument is our endpoint, second is our object of query strings
     // the endpoint is: /search?q=<name>&limit=1&type=artist
-    var searchReq = getFromApi('search', {
+    var searchForArtist = getFromApi('search', {
         q: req.params.name,
         limit: 1,
         type: 'artist'
     });
 
     // Add listeners to the EventEmiiter returned from getFromApi
-    searchReq.on('end', function(item) {
+    searchForArtist.on('end', function(item) {
         var artist = item.artists.items[0];
-        var searchRel = getFromApi('artists/' + artist.id + '/related-artists', {});
+        var searchForRelated = getFromApi('artists/' + artist.id + '/related-artists', {});
 
-        searchRel.on('end', function(item) {
+        searchForRelated.on('end', function(item) {
             artist.related = item.artists;
             res.json(artist);
         });
 
-        searchRel.on('error', function(code) {
+        searchForRelated.on('error', function(code) {
             res.sendStatus(code);
         });
     });
 
-    searchReq.on('error', function(code) {
+    searchForArtist.on('error', function(code) {
         res.sendStatus(code);
     });
 });
