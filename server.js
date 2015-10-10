@@ -38,23 +38,47 @@ app.get('/search/:name', function(req, res) {
         type: 'artist'
     });
 
-    var onSearchEnd = function(item) {
+    // Add listeners to the EventEmiiter returned from getFromApi
+    searchForArtist.on('end', function(item) {
         var artist = item.artists.items[0];
         var searchForRelated = getFromApi('artists/' + artist.id + '/related-artists');
 
-        searchForRelated.on('end', function(item) {
-            artist.related = item.artists;
-            res.json(artist);
+        searchForRelated.on('end', function(list) {
+            artist.related = list.artists;
+            var count = 0;
+            var totalRelatedArtists = artist.related.length;
+
+            var lookupComplete = function() {
+                if (count === totalRelatedArtists) {
+                    res.json(artist);
+                }
+            };
+
+            artist.related.forEach(function(relatedArtist) {
+                var searchForTopTracks = getFromApi('artists/' + relatedArtist.id + '/top-tracks', {
+                    country: 'US'
+                });
+
+                searchForTopTracks.on('end', function(trackList) {
+                    relatedArtist.tracks = trackList.tracks;
+                    count++;
+                    lookupComplete();
+                });
+
+                searchForTopTracks.on('error', function(code) {
+                    res.sendStatus(code);
+                });
+            });
         });
-        searchForRelated.on('error', onError);
-    };
 
-    var onError = function() {
+        searchForRelated.on('error', function(code) {
+            res.sendStatus(code);
+        });
+    });
+
+    searchForArtist.on('error', function(code) {
         res.sendStatus(code);
-    };
-
-    searchForArtist.on('end', onSearchEnd);
-    searchForArtist.on('error', onError);
+    });
 });
 
 app.listen(8080);
