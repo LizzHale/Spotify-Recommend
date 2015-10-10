@@ -65,20 +65,18 @@ app.get('/search/:name', function(req, res) {
                     lookupComplete();
                 });
 
-                searchForTopTracks.on('error', function(code) {
-                    res.sendStatus(code);
-                });
+                searchForTopTracks.on('error', onError);
             });
         });
 
-        searchForRelated.on('error', function(code) {
-            res.sendStatus(code);
-        });
+        searchForRelated.on('error', onError);
     });
 
-    searchForArtist.on('error', function(code) {
+    var onError = function(code) {
         res.sendStatus(code);
-    });
+    };
+
+    searchForArtist.on('error', onError);
 });
 
 app.listen(8080);
