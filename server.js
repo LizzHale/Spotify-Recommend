@@ -38,12 +38,11 @@ app.get('/search/:name', function(req, res) {
         type: 'artist'
     });
 
-    // Add listeners to the EventEmiiter returned from getFromApi
-    searchForArtist.on('end', function(item) {
+    var onArtistSearchEnd = function(item) {
         var artist = item.artists.items[0];
         var searchForRelated = getFromApi('artists/' + artist.id + '/related-artists');
 
-        searchForRelated.on('end', function(list) {
+        var onSearchForRelatedEnd = function(list) {
             artist.related = list.artists;
             var count = 0;
             var totalRelatedArtists = artist.related.length;
@@ -59,23 +58,26 @@ app.get('/search/:name', function(req, res) {
                     country: 'US'
                 });
 
-                searchForTopTracks.on('end', function(trackList) {
+                var onSearchForRelatedTracksEnd = function(trackList) {
                     relatedArtist.tracks = trackList.tracks;
                     count++;
                     lookupComplete();
-                });
+                };
 
+                searchForTopTracks.on('end', onSearchForRelatedTracksEnd);
                 searchForTopTracks.on('error', onError);
             });
-        });
+        };
 
+        searchForRelated.on('end', onSearchForRelatedEnd);
         searchForRelated.on('error', onError);
-    });
+    };
 
     var onError = function(code) {
         res.sendStatus(code);
     };
 
+    searchForArtist.on('end', onArtistSearchEnd);
     searchForArtist.on('error', onError);
 });
 
